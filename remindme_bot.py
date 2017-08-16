@@ -38,8 +38,9 @@ class RemindMeBot:
 				logger.info("New user added.")
 				bot.send_message(chat_id = update.message.chat_id, text = "Hello there! I am a bot that can message you a reminder at a specified time.\n\n\
 					Type /create to create a new reminder.\n\
-					Send me a location message to set up a new timezone.\n\
-					Type /help to see this exact message.")
+					Type /help to see this exact message.\n\
+					Type /about for the GitHub link.\n\
+					Send me a location message to set up a new timezone.")
 				self.user_state[update.message.chat_id] = BotState.DEFAULT
 
 		def create_new_reminder(bot, update):
@@ -116,10 +117,14 @@ class RemindMeBot:
 				Send me a location message to set up a new timezone.\n\
 				Type /help to see this exact message.")
 
+		def about(bot, update):
+			bot.send_message(chat_id = update.message.chat_id, text = "My source code is available at https://github.com/AndrewLeeQ/remindme_telegram_bot")
+
 		start_handler = CommandHandler('start', start)
 		cancel_handler = CommandHandler('cancel', cancel)
 		create_new_reminder_handler = CommandHandler('create', create_new_reminder)
 		help_handler = CommandHandler('help', help)
+		about_handler = CommandHandler('about', about)
 
 		add_new_reminder_description_handler = MessageHandler(Filters.text, add_new_reminder_description)
 		add_new_reminder_date_handler = MessageHandler(Filters.text, add_new_reminder_date)
@@ -132,6 +137,7 @@ class RemindMeBot:
 		self.dispatcher.add_handler(add_new_reminder_date_handler, group = 0)
 		self.dispatcher.add_handler(update_user_timezone_handler)
 		self.dispatcher.add_handler(help_handler)
+		self.dispatcher.add_handler(about_handler)
 
 	def start(self):
 		self.updater.start_polling()
