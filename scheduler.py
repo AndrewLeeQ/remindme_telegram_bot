@@ -33,10 +33,10 @@ class SchedulerThread(threading.Thread):
 	def __init__(self, callback):
 
 		logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-		                     level=logging.INFO)
+		                     level=logging.DEBUG)
 
 		self.logger = logging.getLogger()
-		self.logger.setLevel(logging.INFO)
+		self.logger.setLevel(logging.DEBUG)
 
 		threading.Thread.__init__(self)
 		self.queue = []

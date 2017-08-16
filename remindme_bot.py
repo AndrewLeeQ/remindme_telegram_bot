@@ -3,11 +3,13 @@ from telegram.ext import MessageHandler, Filters
 from scheduler import Scheduler, Reminder
 from xml.dom import minidom
 from util import BotState
+from logging import handlers
 import datetime
 import logging
 import time
 import requests
 import util
+import sys
 
 TOKEN_FILE = open('token.txt', 'r')
 TIMEZONE_DB_API_KEY_FILE = open('api_key.txt', 'r')
@@ -19,6 +21,7 @@ TIMEZONE_API_URL = "http://api.timezonedb.com/v2/get-time-zone"
 TOKEN_FILE.close()
 TIMEZONE_DB_API_KEY_FILE.close()
 
+LOGFILE = 'log'
 
 class RemindMeBot:
 	def __init__(self):
@@ -29,10 +32,20 @@ class RemindMeBot:
 		self.user_state = {}
 		self.user_timezone = {}
 
-		logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-		                     level=logging.INFO)
 		logger = logging.getLogger()
 		logger.setLevel(logging.INFO)
+
+		ch = logging.StreamHandler()
+		ch.setLevel(logging.INFO)
+		ch_format = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+		ch.setFormatter(ch_format)
+		logger.addHandler(ch)
+
+		fh = handlers.RotatingFileHandler(LOGFILE, maxBytes=(1048576*5), backupCount=7)
+		fh.setLevel(logging.DEBUG)
+		fh_format = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+		fh.setFormatter(fh_format)
+		logger.addHandler(fh)
 
 		def start(bot, update):
 			if update.message.chat_id not in self.user_state:
@@ -141,7 +154,7 @@ class RemindMeBot:
 		self.dispatcher.add_handler(about_handler)
 
 	def start(self):
-		self.updater.start_polling()
+		self.updater.start_polling(poll_interval = 1.0, timeout = 20)
 
 	def stop(self):
 		self.updater.stop()
