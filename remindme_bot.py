@@ -4,6 +4,7 @@ from scheduler import Scheduler, Reminder
 from xml.dom import minidom
 from util import BotState
 from logging import handlers
+import threading
 import datetime
 import logging
 import time
@@ -32,24 +33,24 @@ class RemindMeBot:
 		self.user_state = {}
 		self.user_timezone = {}
 
-		logger = logging.getLogger()
-		logger.setLevel(logging.INFO)
+		self.logger = logging.getLogger()
+		self.logger.setLevel(logging.INFO)
 
 		ch = logging.StreamHandler()
 		ch.setLevel(logging.INFO)
 		ch_format = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 		ch.setFormatter(ch_format)
-		logger.addHandler(ch)
+		self.logger.addHandler(ch)
 
 		fh = handlers.RotatingFileHandler(LOGFILE, maxBytes=(1048576*5), backupCount=7)
 		fh.setLevel(logging.DEBUG)
 		fh_format = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 		fh.setFormatter(fh_format)
-		logger.addHandler(fh)
+		self.logger.addHandler(fh)
 
 		def start(bot, update):
 			if update.message.chat_id not in self.user_state:
-				logger.info("New user added.")
+				self.logger.info("New user added.")
 				bot.send_message(chat_id = update.message.chat_id, text = "Hello there! I am a bot that can message you a reminder at a specified time.\n\n\
 					Type /create to create a new reminder.\n\
 					Type /help to see this exact message.\n\
@@ -95,7 +96,7 @@ class RemindMeBot:
 						self.pending_reminder[chat_id].reminder_time = reminder_timestamp[1] - self.user_timezone[chat_id][0]
 					else:
 						self.pending_reminder[chat_id].reminder_time = reminder_timestamp[1]
-					logger.info('Adding a new reminder to queue')
+					self.logger.info('Adding a new reminder to queue')
 					self.scheduler.add_reminder(self.pending_reminder[chat_id])
 					del self.pending_reminder[chat_id]
 					self.user_state[chat_id] = BotState.DEFAULT
@@ -153,6 +154,19 @@ class RemindMeBot:
 		self.dispatcher.add_handler(help_handler)
 		self.dispatcher.add_handler(about_handler)
 
+		self.keepAlive()
+
+	def __keepAliveThread(self):
+		while True:
+			self.logger.debug('keeping the connection alive')
+			self.updater.bot.getMe()
+			time.sleep(60)
+			
+	def keepAlive(self):
+		t = threading.Thread(target = self.__keepAliveThread)
+		t.daemon = True
+		t.start()
+
 	def start(self):
 		self.updater.start_polling(poll_interval = 1.0, timeout = 20)
 
@@ -161,7 +175,6 @@ class RemindMeBot:
 
 	def set_scheduler(self, scheduler):
 		self.scheduler = scheduler
-
 
 
 bot = RemindMeBot()
