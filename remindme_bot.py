@@ -19,6 +19,7 @@ TIMEZONE_API_URL = "http://api.timezonedb.com/v2/get-time-zone"
 TOKEN_FILE.close()
 TIMEZONE_DB_API_KEY_FILE.close()
 
+
 class RemindMeBot:
 	def __init__(self):
 		self.updater = Updater(token = TOKEN)
@@ -148,21 +149,19 @@ class RemindMeBot:
 	def set_scheduler(self, scheduler):
 		self.scheduler = scheduler
 
-def main():
-	bot = RemindMeBot()
-	bot.start()
 
-	scheduler = Scheduler(bot.updater.bot.send_message)
-	scheduler.start()
 
-	bot.set_scheduler(scheduler)
+bot = RemindMeBot()
+bot.start()
 
-	print("Type \"quit\" to finish.")
-	while input() != "quit":
-		pass
+scheduler = Scheduler(bot.updater.bot.send_message)
+scheduler.start()
 
-	scheduler.stop()
-	bot.stop()
+bot.set_scheduler(scheduler)
 
-if __name__ == "__main__":
-	main()
+print("Type \"quit\" to finish.")
+while input() != "quit":
+	pass
+
+scheduler.stop()
+bot.stop()
