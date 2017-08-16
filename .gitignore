@@ -102,3 +102,6 @@ ENV/
 
 api_key.txt
 token.txt
+
+# log files
+log*
