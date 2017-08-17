@@ -12,6 +12,8 @@ import time
 import requests
 import util
 import sys
+import pickle 
+import os
 
 TOKEN_FILE = open('token.txt', 'r')
 TIMEZONE_DB_API_KEY_FILE = open('api_key.txt', 'r')
@@ -25,15 +27,19 @@ TIMEZONE_DB_API_KEY_FILE.close()
 
 LOGFILE = 'log'
 
+STATE_DUMP_PATH = 'state/'
+
 class RemindMeBot:
 	def __init__(self):
 		self.updater = Updater(token = TOKEN)
 		self.dispatcher = self.updater.dispatcher
 
+		# Describe the state of the bot for each user
 		self.pending_reminder = {}
 		self.user_state = {}
 		self.user_timezone = {}
 
+		# Setting up loggers
 		self.logger = logging.getLogger()
 		self.logger.setLevel(logging.INFO)
 
@@ -50,12 +56,14 @@ class RemindMeBot:
 		self.logger.addHandler(fh)
 
 		def start(bot, update):
+			# /start command
 			if update.message.chat_id not in self.user_state:
 				self.logger.info("New user added.")
 			if update.message.chat_id in self.pending_reminder:
 				del self.pending_reminder[update.message.chat_id]
 
-			replyKeyboard = ReplyKeyboardMarkup(keyboard = [[KeyboardButton("/create")], [KeyboardButton("/help")], [KeyboardButton("/about")]], one_time_keyboard = True, resize_keyboard = True)
+			# Add custom keyboard
+			replyKeyboard = ReplyKeyboardMarkup(keyboard = [[KeyboardButton("/create")], [KeyboardButton("/help")], [KeyboardButton("/about")], [KeyboardButton("/cancel")]], resize_keyboard = True)
 
 			bot.send_message(chat_id = update.message.chat_id, text = "Hello there! I am a bot that can message you a reminder at a specified time.\n\n\
 				Type /create to create a new reminder.\n\
@@ -67,6 +75,7 @@ class RemindMeBot:
 			self.user_state[update.message.chat_id] = BotState.DEFAULT
 
 		def create_new_reminder(bot, update):
+			# /create command
 			chat_id = update.message.chat_id
 			if chat_id not in self.user_state:
 				start(bot, update)
@@ -75,6 +84,7 @@ class RemindMeBot:
 				self.user_state[chat_id] = BotState.DESRIPTION
 
 		def add_new_reminder_description(bot, update):
+			# waiting for description, must be a text message
 			chat_id = update.message.chat_id
 			if chat_id not in self.user_state:
 				start(bot, update)
@@ -90,6 +100,7 @@ class RemindMeBot:
 					location_status_string, parse_mode = "Markdown")
 
 		def add_new_reminder_date(bot, update):
+			# waiting for date
 			chat_id = update.message.chat_id
 			if update.message.chat_id not in self.user_state:
 				start(bot, update)
@@ -112,6 +123,7 @@ class RemindMeBot:
 					start(bot, update)
 
 		def cancel(bot, update):
+			# /cancel
 			if update.message.chat_id in self.pending_reminder:
 				del self.pending_reminder[update.message.chat_id]
 			self.user_state[update.message.chat_id] = BotState.DEFAULT
@@ -119,6 +131,7 @@ class RemindMeBot:
 			start(bot, update)
 
 		def update_user_timezone(bot, update):
+			# when a location message is received, get the timezone from it
 			chat_id = update.message.chat_id
 			try:
 				if chat_id not in self.user_state:
@@ -136,6 +149,7 @@ class RemindMeBot:
 				bot.send_message(chat_id = chat_id, text = "Unable to set location, try again later.")
 
 		def help(bot, update):
+			# /help command
 			bot.send_message(chat_id = update.message.chat_id, text = "Hello there! I am a bot that can message you a reminder at a specified time.\n\n\
 				Type /create to create a new reminder.\n\
 				Send me a location message to set up a new timezone.\n\
@@ -143,6 +157,7 @@ class RemindMeBot:
 			start(bot, update)
 
 		def about(bot, update):
+			# /about command
 			bot.send_message(chat_id = update.message.chat_id, text = "My source code is available at https://github.com/AndrewLeeQ/remindme_telegram_bot")
 			start(bot, update)
 
@@ -168,6 +183,8 @@ class RemindMeBot:
 		self.keepAlive()
 
 	def __keepAliveThread(self):
+		# need this to mainain the HTTP connection, otherwise it breaks after 
+		# a long period of idleness :/
 		while True:
 			self.logger.debug('keeping the connection alive')
 			self.updater.bot.getMe()
@@ -179,26 +196,56 @@ class RemindMeBot:
 		t.start()
 
 	def start(self):
+		self.read_bot_state()
 		self.updater.start_polling(poll_interval = 1.0, timeout = 20)
 
 	def stop(self):
 		self.updater.stop()
+		self.dump_bot_state()
 
 	def set_scheduler(self, scheduler):
 		self.scheduler = scheduler
 
+	def dump_bot_state(self):	
+		# preserve bot state
+		try:	
+			if not os.path.isdir(STATE_DUMP_PATH):
+				os.mkdir(STATE_DUMP_PATH)
+			pickle.dump(self.user_state, open(STATE_DUMP_PATH + 'user_state.p', 'wb'))
+			pickle.dump(self.user_timezone, open(STATE_DUMP_PATH + 'user_timezone.p', 'wb'))
+			pickle.dump(self.pending_reminder, open(STATE_DUMP_PATH + 'pending_reminder.p', 'wb'))
+			self.logger.info('successfully dumped bot state')
+		except:
+			self.logger.info('unable to dump bot state')
 
-bot = RemindMeBot()
-bot.start()
+	def read_bot_state(self):
+		# read saved bot state if it exists
+		try:
+			self.user_state = pickle.load(open(STATE_DUMP_PATH + 'user_state.p', 'rb'))
+			self.user_timezone = pickle.load(open(STATE_DUMP_PATH + 'user_timezone.p', 'rb'))
+			self.pending_reminder = pickle.load(open(STATE_DUMP_PATH + 'pending_reminder.p', 'rb'))
+			self.logger.info('successfully loaded saved state')
+		except:
+			self.logger.info('unable to load saved state, starting with default')
 
-scheduler = Scheduler(bot.updater.bot.send_message)
-scheduler.start()
+def main():	
+	bot = RemindMeBot()
+	bot.start()
 
-bot.set_scheduler(scheduler)
+	scheduler = Scheduler(bot.updater.bot.send_message)
+	scheduler.start()
 
-print("Type \"quit\" to finish.")
-while input() != "quit":
-	pass
+	bot.set_scheduler(scheduler)
+	try:
+		print("Type \"quit\" to finish.")
+		while input() != "quit":
+			pass
+	finally:
+		scheduler.stop()
+		bot.stop()
 
-scheduler.stop()
-bot.stop()
+if __name__=='__main__':
+    main()
+
+
+

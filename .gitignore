@@ -105,3 +105,6 @@ token.txt
 
 # log files
 log*
+
+# state files
+state

@@ -2,8 +2,11 @@ import threading
 import time
 import datetime
 import logging 
+import pickle
+import os
 
 UPDATE_TIME = 1 # update every UPDATE_TIME seconds
+STATE_DUMP_PATH = 'state/'
 
 class Reminder:
 	def __init__(self, message_text, chat_id, created_time, reminder_time):
@@ -25,9 +28,27 @@ class Scheduler:
 
 	def stop(self):
 		self.scheduler_thread.exit_flag = 1
+		self.dump_scheduler_state()
 
 	def start(self):
 		self.scheduler_thread.start()
+		self.read_scheduler_state()
+
+	def dump_scheduler_state(self):
+		try:
+			if not os.path.isdir(STATE_DUMP_PATH):
+				os.mkdir(STATE_DUMP_PATH)
+			pickle.dump(self.scheduler_thread.queue, open(STATE_DUMP_PATH + 'scheduler_queue.p', 'wb'))
+			logging.getLogger().info('successfully dumped schedule queue')
+		except:
+			logging.getLogger().info('unable to dump schedule queue')
+
+	def read_scheduler_state(self):
+		try: 			
+			self.scheduler_thread.queue = pickle.load(open(STATE_DUMP_PATH + 'scheduler_queue.p', 'rb'))
+			logging.getLogger().info('successfully loaded schedule queue')
+		except:
+			logging.getLogger().info('unable to load schedule queue')
 
 class SchedulerThread(threading.Thread):
 	def __init__(self, callback):
