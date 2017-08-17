@@ -1,5 +1,6 @@
 from telegram.ext import Updater, CommandHandler
 from telegram.ext import MessageHandler, Filters
+from telegram import ReplyKeyboardMarkup, KeyboardButton
 from scheduler import Scheduler, Reminder
 from xml.dom import minidom
 from util import BotState
@@ -51,12 +52,19 @@ class RemindMeBot:
 		def start(bot, update):
 			if update.message.chat_id not in self.user_state:
 				self.logger.info("New user added.")
-				bot.send_message(chat_id = update.message.chat_id, text = "Hello there! I am a bot that can message you a reminder at a specified time.\n\n\
-					Type /create to create a new reminder.\n\
-					Type /help to see this exact message.\n\
-					Type /about for the GitHub link.\n\
-					Send me a location message to set up a new timezone.")
-				self.user_state[update.message.chat_id] = BotState.DEFAULT
+			if update.message.chat_id in self.pending_reminder:
+				del self.pending_reminder[update.message.chat_id]
+
+			replyKeyboard = ReplyKeyboardMarkup(keyboard = [[KeyboardButton("/create")], [KeyboardButton("/help")], [KeyboardButton("/about")]], one_time_keyboard = True, resize_keyboard = True)
+
+			bot.send_message(chat_id = update.message.chat_id, text = "Hello there! I am a bot that can message you a reminder at a specified time.\n\n\
+				Type /create to create a new reminder.\n\
+				Type /help to see this exact message.\n\
+				Type /about for the GitHub link.\n\
+				Send me a location message to set up a new timezone.",
+				reply_markup = replyKeyboard)
+
+			self.user_state[update.message.chat_id] = BotState.DEFAULT
 
 		def create_new_reminder(bot, update):
 			chat_id = update.message.chat_id
@@ -101,6 +109,7 @@ class RemindMeBot:
 					del self.pending_reminder[chat_id]
 					self.user_state[chat_id] = BotState.DEFAULT
 					bot.send_message(chat_id = chat_id, text = "Got it!")
+					start(bot, update)
 
 		def cancel(bot, update):
 			if update.message.chat_id in self.pending_reminder:
@@ -131,9 +140,11 @@ class RemindMeBot:
 				Type /create to create a new reminder.\n\
 				Send me a location message to set up a new timezone.\n\
 				Type /help to see this exact message.")
+			start(bot, update)
 
 		def about(bot, update):
 			bot.send_message(chat_id = update.message.chat_id, text = "My source code is available at https://github.com/AndrewLeeQ/remindme_telegram_bot")
+			start(bot, update)
 
 		start_handler = CommandHandler('start', start)
 		cancel_handler = CommandHandler('cancel', cancel)
