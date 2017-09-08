@@ -232,15 +232,8 @@ def main():
 
 	scheduler = Scheduler(bot.updater.bot.send_message)
 	scheduler.start()
-
 	bot.set_scheduler(scheduler)
-	try:
-		print("Type \"quit\" to finish.")
-		while input() != "quit":
-			pass
-	finally:
-		scheduler.stop()
-		bot.stop()
+		
 
 if __name__=='__main__':
     main()
