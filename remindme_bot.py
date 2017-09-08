@@ -15,15 +15,10 @@ import sys
 import pickle 
 import os
 
-TOKEN_FILE = open('token.txt', 'r')
-TIMEZONE_DB_API_KEY_FILE = open('api_key.txt', 'r')
+TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
+TIMEZONE_DB_API_KEY = os.getenv('TIMEZONE_DB_API_KEY')
 
-TOKEN = TOKEN_FILE.readline()
-TIMEZONE_DB_API_KEY = TIMEZONE_DB_API_KEY_FILE.readline()
-TIMEZONE_API_URL = "http://api.timezonedb.com/v2/get-time-zone"
-
-TOKEN_FILE.close()
-TIMEZONE_DB_API_KEY_FILE.close()
+TIMEZONE_API_URL = 'http://api.timezonedb.com/v2/get-time-zone'
 
 LOGFILE = 'log'
 
@@ -49,11 +44,11 @@ class RemindMeBot:
 		ch.setFormatter(ch_format)
 		self.logger.addHandler(ch)
 
-		fh = handlers.RotatingFileHandler(LOGFILE, maxBytes=(1048576*5), backupCount=7)
-		fh.setLevel(logging.DEBUG)
-		fh_format = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-		fh.setFormatter(fh_format)
-		self.logger.addHandler(fh)
+		#fh = handlers.RotatingFileHandler(LOGFILE, maxBytes=(1048576*5), backupCount=7)
+		#fh.setLevel(logging.DEBUG)
+		#fh_format = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+		#fh.setFormatter(fh_format)
+		#self.logger.addHandler(fh)
 
 		def start(bot, update):
 			# /start command
@@ -229,6 +224,9 @@ class RemindMeBot:
 			self.logger.info('unable to load saved state, starting with default')
 
 def main():	
+	TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
+	TIMEZONE_DB_API_KEY = os.getenv('TIMEZONE_DB_API_KEY')
+	
 	bot = RemindMeBot()
 	bot.start()
 
