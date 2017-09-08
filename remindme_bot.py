@@ -240,6 +240,13 @@ def main():
 	scheduler.start()
 	bot.set_scheduler(scheduler)
 
+	try: 
+		while True:
+			pass 
+	finally:
+		bot.stop()
+		scheduler.stop()
+		
 if __name__=='__main__':
     main()
 
