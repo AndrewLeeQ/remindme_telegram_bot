@@ -1,1 +1,1 @@
-web: python remindme_bot.py
+worker: python remindme_bot.py
