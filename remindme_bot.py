@@ -187,7 +187,10 @@ class RemindMeBot:
 			self.logger.debug('keeping the connection alive')
 			self.updater.bot.getMe()
 			if HEROKU_APP_URL != None:
-				requests.get(HEROKU_APP_URL)
+				try:
+					requests.get(HEROKU_APP_URL, timeout=10)
+				except:
+					pass 
 
 			time.sleep(60)
 			
@@ -246,7 +249,7 @@ def main():
 	finally:
 		bot.stop()
 		scheduler.stop()
-		
+
 if __name__=='__main__':
     main()
 
