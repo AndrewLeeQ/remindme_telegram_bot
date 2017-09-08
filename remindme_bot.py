@@ -24,6 +24,8 @@ LOGFILE = 'log'
 
 STATE_DUMP_PATH = 'state/'
 
+HEROKU_APP_URL = os.getenv('HEROKU_APP_URL')
+
 class RemindMeBot:
 	def __init__(self):
 		self.updater = Updater(token = TOKEN)
@@ -180,9 +182,13 @@ class RemindMeBot:
 	def __keepAliveThread(self):
 		# need this to mainain the HTTP connection, otherwise it breaks after 
 		# a long period of idleness :/
+		# keep heroku app alive as well
 		while True:
 			self.logger.debug('keeping the connection alive')
 			self.updater.bot.getMe()
+			if HEROKU_APP_URL != None:
+				requests.get(HEROKU_APP_URL)
+
 			time.sleep(60)
 			
 	def keepAlive(self):
@@ -233,7 +239,6 @@ def main():
 	scheduler = Scheduler(bot.updater.bot.send_message)
 	scheduler.start()
 	bot.set_scheduler(scheduler)
-		
 
 if __name__=='__main__':
     main()
