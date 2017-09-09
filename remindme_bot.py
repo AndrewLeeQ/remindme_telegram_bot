@@ -165,7 +165,7 @@ class RemindMeBot:
 			except TelegramError as e:
 				if hasattr(e, 'message'):
 					self.logger.info(e.message)
-				else 
+				else:
 					self.logger.info(e)
 
 		start_handler = CommandHandler('start', start)
