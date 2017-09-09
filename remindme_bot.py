@@ -5,6 +5,8 @@ from scheduler import Scheduler, Reminder
 from xml.dom import minidom
 from util import BotState
 from logging import handlers
+from telegram.error import (TelegramError, Unauthorized, BadRequest, 
+                            TimedOut, ChatMigrated, NetworkError)
 import threading
 import datetime
 import logging
@@ -86,13 +88,13 @@ class RemindMeBot:
 			if chat_id not in self.user_state:
 				start(bot, update)
 			if self.user_state[chat_id] == BotState.DESRIPTION:
-				print('i am here')
 				reminder = Reminder(update.message.text, chat_id, -1, -1)
 				self.pending_reminder[chat_id] = reminder
 				self.user_state[chat_id] = BotState.DATE
 				location_status_string = "_There is no local timezone set, so I will be using UTC+0 by default. Send me a location if you want to set a different timezone._"
 				if chat_id in self.user_timezone:
-					location_status_string = "_Your timezone is set to " + self.user_timezone[chat_id][1] + "._"
+					print(self.user_timezone[chat_id])
+					location_status_string = "_Your timezone is set to " + str(self.user_timezone[chat_id][1]) + "._"
 				bot.send_message(chat_id = chat_id, text = "When should I remind you?\n\n" + 
 					"Type \"in X seconds/minutes/hours/weeks\" or the exact date as \"DD/MM/YYYY HH:mm\"\n\n" + 
 					location_status_string, parse_mode = "Markdown")
@@ -141,6 +143,7 @@ class RemindMeBot:
 				zonename_itemlist = xmldoc.getElementsByTagName('zoneName')
 				offset = int(offset_itemlist[0].childNodes[0].data)
 				zonename = zonename_itemlist[0].childNodes[0].data
+				zonename = zonename.replace('_', ' ')
 				self.user_timezone[chat_id] = (offset, zonename)
 				bot.send_message(chat_id = chat_id, text = "Your timezone has been set to " + zonename + ".")
 			except:
