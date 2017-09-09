@@ -86,6 +86,7 @@ class RemindMeBot:
 			if chat_id not in self.user_state:
 				start(bot, update)
 			if self.user_state[chat_id] == BotState.DESRIPTION:
+				print('i am here')
 				reminder = Reminder(update.message.text, chat_id, -1, -1)
 				self.pending_reminder[chat_id] = reminder
 				self.user_state[chat_id] = BotState.DATE
@@ -158,6 +159,15 @@ class RemindMeBot:
 			bot.send_message(chat_id = update.message.chat_id, text = "My source code is available at https://github.com/AndrewLeeQ/remindme_telegram_bot")
 			start(bot, update)
 
+		def error_callback(bot, update, error):
+			try: 
+				raise error
+			except TelegramError as e:
+				if hasattr(e, 'message'):
+					self.logger.info(e.message)
+				else 
+					self.logger.info(e)
+
 		start_handler = CommandHandler('start', start)
 		cancel_handler = CommandHandler('cancel', cancel)
 		create_new_reminder_handler = CommandHandler('create', create_new_reminder)
@@ -176,6 +186,8 @@ class RemindMeBot:
 		self.dispatcher.add_handler(update_user_timezone_handler)
 		self.dispatcher.add_handler(help_handler)
 		self.dispatcher.add_handler(about_handler)
+
+		self.dispatcher.add_error_handler(error_callback)
 
 		self.keepAlive()
 
